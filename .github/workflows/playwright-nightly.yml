@@ -71,4 +71,3 @@ jobs:
               **Status:** ${{ job.status }} (${{ job.status == 'success' && '✅ Passed' || '❌ Failed' }})
               **Run:** [View on GitHub](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
               **Download Report:** [Artifacts](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
-              **Sent at:** ${{ steps.test.end_time || 'N/A' }}
