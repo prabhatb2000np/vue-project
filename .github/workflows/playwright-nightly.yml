@@ -61,7 +61,7 @@ jobs:
           # Required: Subject with status
           subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
           # Required: Recipients (use secret or hardcoded)
-          to: ${{ secrets.EMAIL_RECIPIENT }}  # e.g., qa-team@company.com
+          to: dawnbikram@gmail.com  # e.g., qa-team@company.com
           # Sender display
           from: "Playwright Bot <${{ secrets.GMAIL_USER }}>"
           # Email body (plain text or HTML)
