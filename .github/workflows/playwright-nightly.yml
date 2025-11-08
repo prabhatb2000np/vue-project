@@ -65,8 +65,8 @@ jobs:
         if: always()
         uses: dawidd6/action-send-mail@v4
         with:
-          server_address: smtp.zoho.com  # Or smtppro.zoho.com for paid
-          server_port: 587  # TLS; use 465 for SSL
+          server_address: smtp.zoho.com.au  # Or smtppro.zoho.com for paid
+          server_port: 465  # TLS; use 465 for SSL
           username: ${{ secrets.ZOHO_SMTP_USER }}
           password: ${{ secrets.ZOHO_APP_PASSWORD }}
           subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
