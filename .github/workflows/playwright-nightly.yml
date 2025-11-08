@@ -59,7 +59,15 @@ jobs:
           name: playwright-report
           path: playwright-report.zip
           retention-days: 30
-
+          
+      - name: Send to Discord
+        if: always()
+        uses: peaceiris/actions-discord@v1
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: 'Playwright Test Report'
+          description: 'Status: $$ {{ job.status }} | Download: https://github.com/ $${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts'
+          color: ${{ job.status == 'success' && '00ff00' || 'ff0000' }}  # Green/Red
       # SEND EMAIL VIA ZOHO SMTP
       # - name: Send Report via Zoho SMTP
       #   if: always()
