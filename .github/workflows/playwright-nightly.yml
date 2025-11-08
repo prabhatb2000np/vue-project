@@ -67,8 +67,7 @@ jobs:
           DISCORD_WEBHOOK: https://discord.com/api/webhooks/1436652153425891485/exUPvNQvsBjJ0yKP9gFt_gwHwblAwc23UhJjT7VnEJFT-rcDnUpdLDRA8IqzmH9rVKln
         with:
           args: |
-            **Playwright Test Report**
-            **Status:** ${{ job.status == 'success' && 'Success' || 'Failed' }}
-            **Run:** [View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            **End Time:** ${{ steps.time.outputs.formatted }}
-            **Download:** [Report ZIP](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
+            ### Playwright Report
+            **Status:** ${{ job.status }}
+            **Run:** [View](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            **Download:** [Artifacts](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
