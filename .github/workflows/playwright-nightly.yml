@@ -7,7 +7,7 @@ on:
   pull_request:
     branches: [ main ]
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # 00:00 UTC (~5:45 AM Nepal)
 
 jobs:
   test:
@@ -48,26 +48,47 @@ jobs:
             zip empty-report.zip empty-report.txt
           fi
 
-      # FIXED: Email step with explicit 'to'
+      # FIXED: Correct Action + Gmail Setup
       - name: Send test report via Gmail
         if: always()
-        uses: techygrrrl/send-mail@v1
+        uses: dawidd6/action-send-mail@v4  # CORRECT REPO + VERSION
         with:
+          # Gmail SMTP settings
           server_address: smtp.gmail.com
           server_port: 587
-          username: ${{ secrets.GMAIL_USER }}
-          password: ${{ secrets.GMAIL_APP_PASSWORD }}
-          subject: "Nightly Playwright Report - ${{ job.status }}"
-          to: ${{ secrets.EMAIL_RECIPIENT }}  # HARD-CODED or use secret
-          # OR use secret: to: ${{ secrets.EMAIL_RECIPIENT }}
+          username: ${{ secrets.GMAIL_USER }}  # e.g., yourgmail@gmail.com
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}  # App password (16 chars)
+          # Required: Subject with status
+          subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
+          # Required: Recipients (use secret or hardcoded)
+          to: ${{ secrets.EMAIL_RECIPIENT }}  # e.g., qa-team@company.com
+          # Sender display
           from: "Playwright Bot <${{ secrets.GMAIL_USER }}>"
+          # Email body (plain text or HTML)
           body: |
-            Playwright Nightly Test Report
+            **Nightly Test Report - ${{ job.status }}**
 
-            Status: ${{ job.status }}
-            Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Workflow:** ${{ github.workflow }}
+            **Repo:** ${{ github.repository }}
+            **Run URL:** https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Status:** ${{ job.status }}
+            **Duration:** ${{ github.run_duration_ms }} ms
 
-            Attached: Full HTML report (unzip to open in browser)
+            Attached: Full HTML report (unzip to view in browser).
+            Raw artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts
 
-            Generated at: ${{ github.event.head_commit.timestamp || 'N/A' }}
+            Regards,
+            CI/CD Bot
+          # Attach the zipped report
           attachments: playwright-report.zip
+        env:
+          # Optional: Proxy if needed
+          HTTP_PROXY: ${{ secrets.HTTP_PROXY || '' }}
+
+      - name: Upload Playwright report (backup)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
