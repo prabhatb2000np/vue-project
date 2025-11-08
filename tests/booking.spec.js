@@ -27,5 +27,6 @@ test.describe('Hotel Booking Flow', () => {
 
     // 5. Assert confirmation
     await expect(page.getByText('Booking Confirmed!')).toBeVisible({ timeout: 30000 });
+    // 6. Optionally, check the email for confirmation
   });
 });
