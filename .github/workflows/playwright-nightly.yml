@@ -57,7 +57,7 @@ jobs:
           server_address: smtp.gmail.com
           server_port: 587
           username: ${{ secrets.GMAIL_USER }}  # e.g., yourgmail@gmail.com
-          password: ${{ secrets.GMAIL_APP_PASSWORD }}  # App password (16 chars)
+          password: ${{ secrets.GMAIL_PASSWORD }}  # App password (16 chars)
           # Required: Subject with status
           subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
           # Required: Recipients (use secret or hardcoded)
