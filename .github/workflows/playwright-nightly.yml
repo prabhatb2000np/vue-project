@@ -64,7 +64,7 @@ jobs:
         if: always()  # Runs even on failure
         uses: Ilshidur/action-discord@0.4.0  # Latest stable version 
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_WEBHOOK: https://discord.com/api/webhooks/1436652153425891485/exUPvNQvsBjJ0yKP9gFt_gwHwblAwc23UhJjT7VnEJFT-rcDnUpdLDRA8IqzmH9rVKln
         with:
           args: |
             ### Playwright Test Report 🚀
