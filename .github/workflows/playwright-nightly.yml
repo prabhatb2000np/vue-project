@@ -1,4 +1,3 @@
-# .github/workflows/playwright-nightly.yml
 name: Playwright Nightly Tests
 
 on:
@@ -7,7 +6,7 @@ on:
   pull_request:
     branches: [ main ]
   schedule:
-    - cron: '0 0 * * *'  # 00:00 UTC → ~5:45 AM Nepal
+    - cron: '0 0 * * *'  # Nightly at 00:00 UTC (~5:45 AM Nepal)
 
 jobs:
   test:
@@ -39,35 +38,45 @@ jobs:
         env:
           CI: true
 
-      - name: Zip report for email
-        run: |
-          if [ -d "playwright-report" ]; then
-            zip -r playwright-report.zip playwright-report/
-          else
-            echo "No report to zip"
-            touch empty-report.txt
-            zip empty-report.zip empty-report.txt
-          fi
+      - name: Zip Playwright report for attachment
+        run: zip -r playwright-report.zip playwright-report/ || true  # Ignore if empty
 
-      # EMAIL STEP: Uses secrets, never hardcodes password
-      - name: Send test report via Gmail
-        if: always()
-        uses: techygrrrl/send-mail@v1
+      # NEW: Send email with report attachment
+      - name: Send email report
+        if: always()  # Always run, even on failure
+        uses: dawidd6/action-send-mail@v4  # Popular, maintained action
         with:
-          server_address: smtp.gmail.com
-          server_port: 587
+          server_address: smtp.gmail.com  # Or smtp.outlook.com
+          server_port: 587  # 587 for STARTTLS (Gmail/Outlook)
           username: ${{ secrets.GMAIL_USER }}
           password: ${{ secrets.GMAIL_APP_PASSWORD }}
-          subject: "Nightly Playwright Report - ${{ job.status }}"
-          to: ${{ secrets.GMAIL_USER }}  # or add team: team@company.com
-          from: "Playwright Bot <${{ secrets.GMAIL_USER }}>"
+          subject: "Nightly Playwright Tests - ${{ job.status }} (${{ github.run_id }})"
+          to: ${{ secrets.GMAIL_TO }}
+          from: "Playwright Bot <${{ secrets.GMAIL_USER }}>"  # Sender display
           body: |
-            Playwright Nightly Test Report
+            **Nightly Test Report - ${{ job.status }}**
 
-            Status: ${{ job.status }}
-            Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Workflow:** ${{ github.workflow }}
+            **Repo:** ${{ github.repository }}
+            **Run URL:** https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Tests Passed:** ${{ needs.test.result == 'success' && 'All passed!' || 'Failures detected - check report' }}
+            **Duration:** ${{ github.run_duration_ms }} ms
 
-            Attached: Full HTML report (unzip to open in browser)
+            Attached: Full HTML report (unzip to view).
+            Download raw: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts
 
-            Generated at: ${{ steps.test.outputs.time }}
+            Regards,
+            CI/CD Bot
+          # Attach zipped report
           attachments: playwright-report.zip
+        env:
+          # Optional: Proxy if needed
+          HTTP_PROXY: ${{ secrets.HTTP_PROXY || '' }}
+
+      - name: Upload Playwright report (backup)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
