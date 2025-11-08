@@ -71,7 +71,7 @@ jobs:
           password: ${{ secrets.ZOHO_APP_PASSWORD }}
           subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
           to: dawnbikram@gmail.com
-          from: ${{ secrets.ZOHO_FROM_EMAIL }}
+          from: prabhat.jha@tekkon.com.np
           body: |
             **Playwright Nightly Test Report**
 
