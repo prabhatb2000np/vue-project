@@ -1,5 +1,5 @@
 # .github/workflows/playwright-sendgrid.yml
-name: Playwright + SendGrid Report
+name: Playwright + Report
 
 on:
   push:
@@ -52,30 +52,6 @@ jobs:
             echo "<h1>No test results</h1>" > playwright-report/index.html
             zip -r playwright-report.zip playwright-report/
           fi
-
-      # SEND EMAIL VIA SENDGRID SMTP
-      - name: Send Report via SendGrid
-        if: always()
-        uses: dawidd6/action-send-mail@v4
-        with:
-          server_address: smtp.sendgrid.net
-          server_port: 587
-          username: apikey  # ← Always "apikey" for SendGrid
-          password: ${{ secrets.SENDGRID_API_KEY }}
-          subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
-          to: ${{ secrets.SENDGRID_TO }} || dawnbikram@gmail.com
-          from: "Playwright Bot <${{ secrets.SENDGRID_FROM }}>"
-          body: |
-            **Playwright Nightly Report**
-
-            **Status:** ${{ job.status }}
-            **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            **Time:** ${{ steps.test.end_time || 'N/A' }}
-
-            Attached: Full HTML report (unzip & open `index.html`)
-
-            Powered by GitHub Actions + SendGrid
-          attachments: playwright-report.zip
 
       - name: Upload report (backup)
         if: always()
