@@ -63,7 +63,7 @@ jobs:
           username: apikey  # ← Always "apikey" for SendGrid
           password: ${{ secrets.SENDGRID_API_KEY }}
           subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
-          to: ${{ secrets.SENDGRID_TO } || dawnbikram@gmail.com}
+          to: ${{ secrets.SENDGRID_TO }} || dawnbikram@gmail.com
           from: "Playwright Bot <${{ secrets.SENDGRID_FROM }}>"
           body: |
             **Playwright Nightly Report**
