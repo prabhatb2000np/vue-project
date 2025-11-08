@@ -1,94 +1,28 @@
-# .github/workflows/playwright-nightly.yml
-name: Playwright Nightly Tests
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  schedule:
-    - cron: '0 0 * * *'  # 00:00 UTC (~5:45 AM Nepal)
+name: Playwright Report Email
+on: [schedule: - cron: '0 0 * * *']  # Nightly
 
 jobs:
-  test:
-    timeout-minutes: 60
+  send-report:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'yarn' }
+      - run: yarn install --frozen-lockfile
+      - run: npx playwright install --with-deps
+      - run: npx playwright test
+        env: { CI: true }
+      - name: Zip Report
+        run: zip -r report.zip playwright-report/ || true
+      - name: Send via SendGrid
+        uses: dawidd6/action-send-mail@v4
         with:
-          node-version: '20'
-          cache: 'yarn'
-
-      - name: Install Yarn
-        run: npm install -g yarn@1.22.22
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Clean old reports
-        run: rm -rf playwright-report test-results
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-
-      - name: Run Playwright tests
-        run: npx playwright test
-        env:
-          CI: true
-
-      - name: Zip report for email
-        run: |
-          if [ -d "playwright-report" ]; then
-            zip -r playwright-report.zip playwright-report/
-          else
-            echo "No report generated" > empty-report.txt
-            zip empty-report.zip empty-report.txt
-          fi
-
-      # FIXED: Correct Action + Gmail Setup
-      - name: Send test report via Gmail
-        if: always()
-        uses: dawidd6/action-send-mail@v4  # CORRECT REPO + VERSION
-        with:
-          # Gmail SMTP settings
           server_address: smtp.sendgrid.net
-          server_port: 2525
+          server_port: 587
           username: apikey
           password: ${{ secrets.SENDGRID_API_KEY }}
-          # Required: Subject with status
-          subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
-          # Required: Recipients (use secret or hardcoded)
-          to: dawnbikram@gmail.com  # e.g., qa-team@company.com
-          # Sender display
-          from: "Playwright Bot <${{ secrets.MAIL_USER }}>"
-          # Email body (plain text or HTML)
-          body: |
-            **Nightly Test Report - ${{ job.status }}**
-
-            **Workflow:** ${{ github.workflow }}
-            **Repo:** ${{ github.repository }}
-            **Run URL:** https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            **Status:** ${{ job.status }}
-            **Duration:** ${{ github.run_duration_ms }} ms
-
-            Attached: Full HTML report (unzip to view in browser).
-            Raw artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts
-
-            Regards,
-            CI/CD Bot
-          # Attach the zipped report
-          attachments: playwright-report.zip
-        env:
-          # Optional: Proxy if needed
-          HTTP_PROXY: ${{ secrets.HTTP_PROXY || '' }}
-
-      - name: Upload Playwright report (backup)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
+          to: ${{ secrets.SENDGRID_TO }}
+          from: "${{ secrets.SENDGRID_FROM }}"  # Verified!
+          subject: "Playwright Report - ${{ job.status }}"
+          body: "Run: $$ {{ github.server_url }}/ $${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          attachments: report.zip
