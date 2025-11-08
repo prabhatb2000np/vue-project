@@ -60,36 +60,15 @@ jobs:
           path: playwright-report.zip
           retention-days: 30
 
-      - name: Send to Discord
-        if: always()
-        uses: peaceiris/actions-discord@v1
+      - name: Send Discord Notification
+        if: always()  # Runs even on failure
+        uses: Ilshidur/action-discord@0.4.0  # Latest stable version 
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         with:
-          webhook_url: https://discord.com/api/webhooks/1436652153425891485/exUPvNQvsBjJ0yKP9gFt_gwHwblAwc23UhJjT7VnEJFT-rcDnUpdLDRA8IqzmH9rVKln
-          title: 'Playwright Test Report'
-          description: 'Status: $$ {{ job.status }} | Download: https://github.com/ $${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts'
-          color: ${{ job.status == 'success' && '00ff00' || 'ff0000' }}  # Green/Red
-      # SEND EMAIL VIA ZOHO SMTP
-      # - name: Send Report via Zoho SMTP
-      #   if: always()
-      #   uses: dawidd6/action-send-mail@v4
-      #   with:
-      #     server_address: smtp.zoho.com.au  # Or smtppro.zoho.com for paid
-      #     server_port: 465  # TLS; use 465 for SSL
-      #     username: ${{ secrets.ZOHO_SMTP_USER }}
-      #     password: ${{ secrets.ZOHO_APP_PASSWORD }}
-      #     subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
-      #     to: dawnbikram@gmail.com
-      #     from: prabhat.jha@tekkon.com.np
-      #     body: |
-      #       **Playwright Nightly Test Report**
-
-      #       **Status:** ${{ job.status }}
-      #       **Run URL:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      #       **Duration:** ${{ steps.test.outcome }} (completed at ${{ steps.test.end_time || 'N/A' }})
-
-      #       Download full report:
-      #       - Artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts
-      #       - Attached: playwright-report.zip (unzip & open index.html in browser)
-
-      #       Powered by GitHub Actions + Zoho Mail SMTP
-      #     attachments: playwright-report.zip
+          args: |
+            ### Playwright Test Report 🚀
+            **Status:** ${{ job.status }} (${{ job.status == 'success' && '✅ Passed' || '❌ Failed' }})
+            **Run:** [View on GitHub](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            **Download Report:** [Artifacts](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
+            *Sent at: ${{ steps.test.end_time || 'N/A' }}*
