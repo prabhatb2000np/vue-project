@@ -1,5 +1,4 @@
-# .github/workflows/playwright-sendgrid.yml
-name: Playwright + Report
+name: Playwright Tests + Zoho SMTP Report
 
 on:
   push:
@@ -7,7 +6,7 @@ on:
   pull_request:
     branches: [ main ]
   schedule:
-    - cron: '0 0 * * *'  # 00:00 UTC → 5:45 AM Nepal
+    - cron: '0 0 * * *'  # Nightly at 00:00 UTC (~5:45 AM Nepal time)
 
 jobs:
   test-and-email:
@@ -22,7 +21,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'yarn'
+          cache: 'yarn'  # Or 'npm' if using npm
 
       - name: Install Yarn
         run: npm install -g yarn@1.22.22
@@ -49,14 +48,40 @@ jobs:
             zip -r playwright-report.zip playwright-report/
           else
             mkdir -p playwright-report
-            echo "<h1>No test results</h1>" > playwright-report/index.html
+            echo "<h1>No test results generated</h1>" > playwright-report/index.html
             zip -r playwright-report.zip playwright-report/
           fi
 
-      - name: Upload report (backup)
+      - name: Upload report as artifact (backup)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: playwright-report/
+          path: playwright-report.zip
           retention-days: 30
+
+      # SEND EMAIL VIA ZOHO SMTP
+      - name: Send Report via Zoho SMTP
+        if: always()
+        uses: dawidd6/action-send-mail@v4
+        with:
+          server_address: smtp.zoho.com  # Or smtppro.zoho.com for paid
+          server_port: 587  # TLS; use 465 for SSL
+          username: ${{ secrets.ZOHO_SMTP_USER }}
+          password: ${{ secrets.ZOHO_APP_PASSWORD }}
+          subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
+          to: ${{ secrets.ZOHO_TO_EMAIL }}
+          from: "Playwright Bot <${{ secrets.ZOHO_FROM_EMAIL }}>"
+          body: |
+            **Playwright Nightly Test Report**
+
+            **Status:** ${{ job.status }}
+            **Run URL:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Duration:** ${{ steps.test.outcome }} (completed at ${{ steps.test.end_time || 'N/A' }})
+
+            Download full report:
+            - Artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts
+            - Attached: playwright-report.zip (unzip & open index.html in browser)
+
+            Powered by GitHub Actions + Zoho Mail SMTP
+          attachments: playwright-report.zip
