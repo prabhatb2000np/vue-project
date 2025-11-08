@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ main ]
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # Nightly at 00:00 UTC (~5:45 AM Nepal)
 
 jobs:
   test:
@@ -38,7 +38,42 @@ jobs:
         env:
           CI: true
 
-      - name: Upload Playwright report
+      - name: Zip Playwright report for attachment
+        run: zip -r playwright-report.zip playwright-report/ || true  # Ignore if empty
+
+      # NEW: Send email with report attachment
+      - name: Send email report
+        if: always()  # Always run, even on failure
+        uses: dawidd6/action-send-mail@v4  # Popular, maintained action
+        with:
+          server_address: smtp.gmail.com  # Or smtp.outlook.com
+          server_port: 587  # 587 for STARTTLS (Gmail/Outlook)
+          username: ${{ dawnbikram@gmail.com }}
+          password: ${{ Prabhat_1977 }}
+          subject: "Nightly Playwright Tests - ${{ job.status }} (${{ github.run_id }})"
+          to: ${{ secrets.MAIL_TO }}
+          from: "Playwright Bot <${{ secrets.MAIL_USERNAME }}>"  # Sender display
+          body: |
+            **Nightly Test Report - ${{ job.status }}**
+
+            **Workflow:** ${{ github.workflow }}
+            **Repo:** ${{ github.repository }}
+            **Run URL:** https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Tests Passed:** ${{ needs.test.result == 'success' && 'All passed!' || 'Failures detected - check report' }}
+            **Duration:** ${{ github.run_duration_ms }} ms
+
+            Attached: Full HTML report (unzip to view).
+            Download raw: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts
+
+            Regards,
+            CI/CD Bot
+          # Attach zipped report
+          attachments: playwright-report.zip
+        env:
+          # Optional: Proxy if needed
+          HTTP_PROXY: ${{ secrets.HTTP_PROXY || '' }}
+
+      - name: Upload Playwright report (backup)
         if: always()
         uses: actions/upload-artifact@v4
         with:
