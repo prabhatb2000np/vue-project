@@ -48,7 +48,7 @@ jobs:
         with:
           server_address: smtp.gmail.com  # Or smtp.outlook.com
           server_port: 587  # 587 for STARTTLS (Gmail/Outlook)
-          username: ${{ dawnbikram@gmail.com }}
+          username: ${{ dawnbikram }}
           password: ${{ Prabhat_1977 }}
           subject: "Nightly Playwright Tests - ${{ job.status }} (${{ github.run_id }})"
           to: ${{ secrets.MAIL_TO }}
