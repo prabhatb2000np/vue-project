@@ -1,28 +1,86 @@
-name: Playwright Report Email
-on: [schedule: - cron: '0 0 * * *']  # Nightly
+# .github/workflows/playwright-sendgrid.yml
+name: Playwright + SendGrid Report
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * *'  # 00:00 UTC → 5:45 AM Nepal
 
 jobs:
-  send-report:
+  test-and-email:
+    timeout-minutes: 60
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'yarn' }
-      - run: yarn install --frozen-lockfile
-      - run: npx playwright install --with-deps
-      - run: npx playwright test
-        env: { CI: true }
-      - name: Zip Report
-        run: zip -r report.zip playwright-report/ || true
-      - name: Send via SendGrid
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install Yarn
+        run: npm install -g yarn@1.22.22
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Clean old reports
+        run: rm -rf playwright-report test-results
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        id: test
+        run: npx playwright test
+        env:
+          CI: true
+
+      - name: Zip HTML report
+        if: always()
+        run: |
+          if [ -d "playwright-report" ] && [ "$(ls -A playwright-report)" ]; then
+            zip -r playwright-report.zip playwright-report/
+          else
+            mkdir -p playwright-report
+            echo "<h1>No test results</h1>" > playwright-report/index.html
+            zip -r playwright-report.zip playwright-report/
+          fi
+
+      # SEND EMAIL VIA SENDGRID SMTP
+      - name: Send Report via SendGrid
+        if: always()
         uses: dawidd6/action-send-mail@v4
         with:
           server_address: smtp.sendgrid.net
           server_port: 587
-          username: apikey
+          username: apikey  # ← Always "apikey" for SendGrid
           password: ${{ secrets.SENDGRID_API_KEY }}
+          subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
           to: ${{ secrets.SENDGRID_TO }}
-          from: "${{ secrets.SENDGRID_FROM }}"  # Verified!
-          subject: "Playwright Report - ${{ job.status }}"
-          body: "Run: $$ {{ github.server_url }}/ $${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          attachments: report.zip
+          from: "Playwright Bot <${{ secrets.SENDGRID_FROM }}>"
+          body: |
+            **Playwright Nightly Report**
+
+            **Status:** ${{ job.status }}
+            **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Time:** ${{ steps.test.end_time || 'N/A' }}
+
+            Attached: Full HTML report (unzip & open `index.html`)
+
+            Powered by GitHub Actions + SendGrid
+          attachments: playwright-report.zip
+
+      - name: Upload report (backup)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
