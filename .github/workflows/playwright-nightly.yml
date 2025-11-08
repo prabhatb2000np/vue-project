@@ -54,10 +54,10 @@ jobs:
         uses: dawidd6/action-send-mail@v4  # CORRECT REPO + VERSION
         with:
           # Gmail SMTP settings
-          server_address: smtp.gmail.com
+          server_address: smtp.sendgrid.net
           server_port: 587
-          username: ${{ secrets.GMAIL_USER }}  # e.g., yourgmail@gmail.com
-          password: ${{ secrets.GMAIL_PASSWORD }}  # App password (16 chars)
+          username: apikey
+          password: ${{ secrets.SENDGRID_API_KEY }}
           # Required: Subject with status
           subject: "Nightly Playwright Report - ${{ job.status }} (${{ github.run_id }})"
           # Required: Recipients (use secret or hardcoded)
